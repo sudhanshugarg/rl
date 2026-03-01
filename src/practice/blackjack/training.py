@@ -6,7 +6,7 @@ from agent import BlackjackAgent
 if __name__ == "__main__":
     # Training hyperparameters
     learning_rate = 0.01        # How fast to learn (higher = faster but less stable)
-    n_episodes = 100_000        # Number of hands to practice
+    n_episodes = 100_000_0        # Number of hands to practice
     start_epsilon = 1.0         # Start with 100% random actions
     epsilon_decay = start_epsilon / (n_episodes / 2)  # Reduce exploration over time
     final_epsilon = 0.1         # Always keep some exploration
@@ -52,5 +52,4 @@ if __name__ == "__main__":
         agent.decay_epsilon()
 
     model_path = Path("blackjack_agent_trained.pkl")
-    if not model_path.exists():
-        agent.save(model_path)
+    agent.save(model_path)

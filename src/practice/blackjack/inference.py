@@ -7,7 +7,7 @@ if __name__ == "__main__":
     env = agent.env
 
     from tqdm import tqdm  # Progress bar
-    n_episodes = 2
+    n_episodes = 5
 
     for episode in tqdm(range(n_episodes)):
         # Start a new hand

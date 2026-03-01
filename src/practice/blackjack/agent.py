@@ -42,6 +42,42 @@ class BlackjackAgent:
         # Track learning progress
         self.training_error = []
 
+    @staticmethod
+    def _extract_env_metadata(env: gym.Env) -> tuple[str, dict]:
+        """Extract enough metadata to reconstruct the environment."""
+        spec = getattr(env, "spec", None)
+        if spec is None and hasattr(env, "unwrapped"):
+            spec = getattr(env.unwrapped, "spec", None)
+
+        env_id = "Blackjack-v1"
+        env_kwargs = {"sab": False}
+        if spec is not None:
+            env_id = getattr(spec, "id", env_id)
+            env_kwargs = dict(getattr(spec, "kwargs", {}) or env_kwargs)
+
+        return env_id, env_kwargs
+
+    @classmethod
+    def create(cls, path: str | Path, render_mode: str = None) -> "BlackjackAgent":
+        """Create and return an agent directly from a saved file."""
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+
+        env_id = data.get("env_id", "Blackjack-v1")
+        env_kwargs = data.get("env_kwargs", {"sab": False, "render_mode": render_mode})
+        env = gym.make(env_id, **env_kwargs)
+
+        agent = cls(
+            env=env,
+            learning_rate=data["lr"],
+            initial_epsilon=data["epsilon"],
+            epsilon_decay=data["epsilon_decay"],
+            final_epsilon=data["final_epsilon"],
+            discount_factor=data["discount_factor"],
+        )
+        agent.load(path)
+        return agent
+
     def get_action(self, obs: tuple[int, int, bool]) -> int:
         """Choose an action using epsilon-greedy strategy.
 
@@ -93,6 +129,7 @@ class BlackjackAgent:
 
     def save(self, path: str | Path) -> None:
         """Persist the learned agent state to disk."""
+        env_id, env_kwargs = self._extract_env_metadata(self.env)
         data = {
             "q_values": dict(self.q_values),
             "lr": self.lr,
@@ -101,6 +138,8 @@ class BlackjackAgent:
             "epsilon_decay": self.epsilon_decay,
             "final_epsilon": self.final_epsilon,
             "training_error": self.training_error,
+            "env_id": env_id,
+            "env_kwargs": env_kwargs,
         }
         with open(path, "wb") as f:
             pickle.dump(data, f)

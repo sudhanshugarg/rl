@@ -1,4 +1,6 @@
 from collections import defaultdict
+import pickle
+from pathlib import Path
 import gymnasium as gym
 import numpy as np
 
@@ -89,6 +91,36 @@ class BlackjackAgent:
         """Reduce exploration rate after each episode."""
         self.epsilon = max(self.final_epsilon, self.epsilon - self.epsilon_decay)
 
+    def save(self, path: str | Path) -> None:
+        """Persist the learned agent state to disk."""
+        data = {
+            "q_values": dict(self.q_values),
+            "lr": self.lr,
+            "discount_factor": self.discount_factor,
+            "epsilon": self.epsilon,
+            "epsilon_decay": self.epsilon_decay,
+            "final_epsilon": self.final_epsilon,
+            "training_error": self.training_error,
+        }
+        with open(path, "wb") as f:
+            pickle.dump(data, f)
+
+    def load(self, path: str | Path) -> None:
+        """Load a previously saved agent state from disk."""
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+
+        self.q_values = defaultdict(
+            lambda: np.zeros(self.env.action_space.n),
+            data["q_values"],
+        )
+        self.lr = data["lr"]
+        self.discount_factor = data["discount_factor"]
+        self.epsilon = data["epsilon"]
+        self.epsilon_decay = data["epsilon_decay"]
+        self.final_epsilon = data["final_epsilon"]
+        self.training_error = data["training_error"]
+
 
 if __name__ == "__main__":
     # Training hyperparameters
@@ -109,6 +141,9 @@ if __name__ == "__main__":
         epsilon_decay=epsilon_decay,
         final_epsilon=final_epsilon,
     )
+    model_path = Path("blackjack_agent_untrained.pkl")
+    if not model_path.exists():
+        agent.save(model_path)
 
     from tqdm import tqdm  # Progress bar
 
@@ -134,3 +169,7 @@ if __name__ == "__main__":
 
         # Reduce exploration rate (agent becomes less random over time)
         agent.decay_epsilon()
+
+    model_path = Path("blackjack_agent_trained.pkl")
+    if not model_path.exists():
+        agent.save(model_path)
